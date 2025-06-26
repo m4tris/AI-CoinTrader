@@ -7,7 +7,7 @@ import time
 from dotenv import load_dotenv
 from openai import OpenAI
 
-# Ortam değişkenlerini yükle (.env içinde OPENAI_API_KEY olmalı)
+# Load environment variables (OPENAI_API_KEY must be in .env)
 load_dotenv()
 openai_api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=openai_api_key)
@@ -31,7 +31,7 @@ def get_klines_df(symbol, interval="1h", limit=200):
         "close_time", "quote_asset_volume", "trades",
         "taker_buy_base", "taker_buy_quote", "ignore"
     ])
-    # Sayısal sütunları float'a dönüştür
+    # Convert numeric columns to float
     df[["close", "high", "low", "volume"]] = df[["close", "high", "low", "volume"]].apply(pd.to_numeric)
     return df
 
@@ -136,10 +136,10 @@ def analyze_coin(symbol):
             return None
         scores.append(result["score"])
         datas.append(result)
-        time.sleep(0.15)  # API limit için bekleme
+        time.sleep(0.15)  # Wait to respect API rate limits
 
     avg_score = sum(scores) / len(scores)
-    main_data = datas[-1]  # 1d timeframe verisi
+    main_data = datas[-1]  # Use data from the 1d timeframe
     main_data["symbol"] = symbol
     main_data["timestamp"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     main_data["score"] = avg_score
@@ -149,29 +149,29 @@ def analyze_coin(symbol):
 
 def ask_gpt(coin_data):
     prompt = (
-        f"Bir kripto paranın teknik göstergeleri aşağıda verilmiştir. "
-        f"Lütfen sadece 'AL' veya 'ALMA' kararı ver. Kısa ve net ol.\n\n"
+        f"The technical indicators of a cryptocurrency are given below. "
+        f"Please provide only a 'BUY' or 'DON'T BUY' decision. Be short and clear.\n\n"
         f"Coin: {coin_data['symbol']}\n"
         f"RSI: {coin_data['rsi']}\n"
         f"MACD: {coin_data['macd']} (Signal: {coin_data['macd_signal']})\n"
         f"EMA50: {coin_data['ema50']} vs EMA200: {coin_data['ema200']}\n"
-        f"Destek: {coin_data['support']}\n"
-        f"Direnç: {coin_data['resistance']}\n"
-        f"ATR (Volatilite): {coin_data['atr']}\n"
-        f"Puan: {round(coin_data['score'], 2)}\n\n"
-        f"Lütfen karar ver."
+        f"Support: {coin_data['support']}\n"
+        f"Resistance: {coin_data['resistance']}\n"
+        f"ATR (Volatility): {coin_data['atr']}\n"
+        f"Score: {round(coin_data['score'], 2)}\n\n"
+        f"Please make a decision."
     )
     try:
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "Sen profesyonel bir kripto para teknik analiz uzmanısın."},
+                {"role": "system", "content": "You are a professional cryptocurrency technical analyst."},
                 {"role": "user", "content": prompt}
             ]
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
-        return f"GPT Hatası: {e}"
+        return f"GPT Error: {e}"
 
 
 def scan_market(min_score=8, max_coins=100):
@@ -184,7 +184,7 @@ def scan_market(min_score=8, max_coins=100):
             if result and result["score"] >= min_score:
                 analyzed.append(result)
         except Exception as e:
-            print(f"{sym} analiz hatası: {e}")
+            print(f"{sym} analysis error: {e}")
 
     return analyzed
 
@@ -194,7 +194,7 @@ if __name__ == "__main__":
 
     if high_score_coins:
         best = max(high_score_coins, key=lambda x: x["score"])
-        print(f"\n🔝 En iyi coin: {best['symbol']} (Score: {round(best['score'], 2)})")
-        print("Detaylı veriler:", best)
+        print(f"\n🔝 Best coin: {best['symbol']} (Score: {round(best['score'], 2)})")
+        print("Detailed data:", best)
     else:
-        print("Yüksek puanlı coin bulunamadı.")
+        print("No high-score coins found.")
