@@ -8,4 +8,4 @@ This Python project performs technical analysis on Binance USDT trading pairs an
 ```bash  
 git clone https://github.com/your-username/your-repo.git  
 cd your-repo  
-
+yaml
